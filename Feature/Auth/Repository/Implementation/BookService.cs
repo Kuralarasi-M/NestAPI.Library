@@ -26,25 +26,56 @@ namespace LibraryApp.Feature.Auth.Repository.Implementation
      GetBookQuery gutendexId,
      CancellationToken cancellationToken)
         {
-            // 1. Get book details from Gutendex (ensure trailing slash)
-            var response = await _httpClient.GetAsync(
-                $"books/{gutendexId.BookId}/",
-                cancellationToken);
+            GetBookResponseDTO? book = null;
+            try
+            {
+                // 1. Get book details from Gutendex (ensure trailing slash)
+                var response = await _httpClient.GetAsync(
+                    $"books/{gutendexId.BookId}/",
+                    cancellationToken);
 
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync(
-                cancellationToken);
-
-            var book = JsonSerializer.Deserialize<GetBookResponseDTO>(
-                json,
-                new JsonSerializerOptions
+                if (response.IsSuccessStatusCode)
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                    book = JsonSerializer.Deserialize<GetBookResponseDTO>(
+                        json,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Gutendex fetch failed for {gutendexId.BookId}: {ex.Message}");
+            }
 
             if (book == null)
-                return null;
+            {
+                // Fallback to local DB if available
+                var dbBook = await _dbContext.Books.FirstOrDefaultAsync(b => b.GutendexId == gutendexId.BookId, cancellationToken);
+                if (dbBook != null)
+                {
+                    book = new GetBookResponseDTO
+                    {
+                        Id = dbBook.GutendexId,
+                        Title = dbBook.Title,
+                        Authors = [new AuthorDTO { Name = dbBook.Author }],
+                        Summaries = string.IsNullOrEmpty(dbBook.Summary) ? [] : [dbBook.Summary],
+                        Subjects = string.IsNullOrEmpty(dbBook.Subjects) ? [] : [dbBook.Subjects],
+                        Languages = string.IsNullOrEmpty(dbBook.Language) ? ["en"] : [dbBook.Language],
+                        Formats = new Dictionary<string, string>
+                        {
+                            ["image/jpeg"] = dbBook.CoverImage ?? ""
+                        },
+                        Download_Count = dbBook.DownloadCount
+                    };
+                }
+                else
+                {
+                    return null;
+                }
+            }
 
             // 2. Download the actual book text from Gutenberg with fallback
             var textUrl =
