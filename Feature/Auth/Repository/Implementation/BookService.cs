@@ -1,4 +1,4 @@
-﻿using LibraryApp.Data;
+using LibraryApp.Data;
 using LibraryApp.Feature.Auth.Commands;
 using LibraryApp.Feature.Auth.Repository.Interface;
 using LibraryApp.Models;
@@ -46,21 +46,45 @@ namespace LibraryApp.Feature.Auth.Repository.Implementation
             if (book == null)
                 return null;
 
-            // 2. Download the actual book text from Gutenberg
+            // 2. Download the actual book text from Gutenberg with fallback
             var textUrl =
                 $"https://www.gutenberg.org/cache/epub/{gutendexId.BookId}/pg{gutendexId.BookId}.txt";
 
-            var textResponse = await _gutenbergClient.GetAsync(
-                textUrl,
-                cancellationToken);
+            try
+            {
+                var textResponse = await _gutenbergClient.GetAsync(
+                    textUrl,
+                    HttpCompletionOption.ResponseContentRead,
+                    cancellationToken);
 
-            textResponse.EnsureSuccessStatusCode();
-
-            var bookText = await textResponse.Content.ReadAsStringAsync(
-                cancellationToken);
-
-            // 3. Add the text to the response
-            book.BookText = bookText;
+                if (textResponse.IsSuccessStatusCode)
+                {
+                    book.BookText = await textResponse.Content.ReadAsStringAsync(cancellationToken);
+                }
+            }
+            catch (Exception)
+            {
+                // If Gutenberg drops connection or fails, fall back to any available format or empty string
+                if (book.Formats != null && book.Formats.TryGetValue("text/plain; charset=utf-8", out var plainUrl))
+                {
+                    try
+                    {
+                        var fallbackResponse = await _gutenbergClient.GetAsync(plainUrl, cancellationToken);
+                        if (fallbackResponse.IsSuccessStatusCode)
+                        {
+                            book.BookText = await fallbackResponse.Content.ReadAsStringAsync(cancellationToken);
+                        }
+                    }
+                    catch
+                    {
+                        book.BookText = string.Empty;
+                    }
+                }
+                else
+                {
+                    book.BookText = string.Empty;
+                }
+            }
 
             return book;
         }

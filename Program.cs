@@ -38,7 +38,12 @@ builder.Services.AddHttpClient<IBookService, BookService>(client =>
 builder.Services.AddHttpClient("Gutenberg", client =>
 {
     client.BaseAddress = new Uri("https://www.gutenberg.org/");
-    client.Timeout = TimeSpan.FromSeconds(30);
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    client.DefaultRequestHeaders.Add("Accept", "text/plain,text/html,*/*");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AutomaticDecompression = System.Net.DecompressionMethods.All
 });
 builder.Services.AddCors(options =>
 {
