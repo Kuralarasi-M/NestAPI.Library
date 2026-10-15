@@ -21,6 +21,7 @@ namespace LibraryApp.Models
         public List<DownloadHistory> DownloadHistories { get; set; } = new ();
         public List<SearchHistory> SearchHistories { get; set; } = new();
         public List<UserFcmToken> FcmTokens { get; set; } = new();
+        public List<Notification> Notifications { get; set; } = new();
 
     }
 }

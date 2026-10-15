@@ -39,5 +39,11 @@ namespace LibraryApp.Controllers
             var result = await mediator.Send(token);
             return Ok(result);
         }
+        [HttpGet("Notification")]
+        public async Task<IActionResult> NotificationAsync()
+        {
+            var result = await  mediator.Send(new NotficationReq());
+            return Ok(result);
+        }
     }
 }

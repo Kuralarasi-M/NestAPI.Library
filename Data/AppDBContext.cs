@@ -21,6 +21,7 @@ namespace LibraryApp.Data
 
         public DbSet<SearchHistory> SearchHistories => Set<SearchHistory>();
         public DbSet<UserFcmToken> UserFcmTokens { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

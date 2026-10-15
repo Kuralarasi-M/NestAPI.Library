@@ -25,6 +25,7 @@ namespace LibraryApp.Feature.Auth.Commands
         public List<string> Subjects { get; set; } = [];
 
         public List<string> Languages { get; set; } = [];
+        public string BookText { get; set; } = string.Empty;
 
         public Dictionary<string, string> Formats { get; set; } = [];
 

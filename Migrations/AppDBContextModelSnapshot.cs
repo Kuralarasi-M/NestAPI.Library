@@ -124,6 +124,38 @@ namespace LibraryApp.Migrations
                     b.ToTable("Favorites");
                 });
 
+            modelBuilder.Entity("LibraryApp.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("LibraryApp.Models.ReadingHistory", b =>
                 {
                     b.Property<long>("Id")
@@ -290,6 +322,17 @@ namespace LibraryApp.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LibraryApp.Models.Notification", b =>
+                {
+                    b.HasOne("LibraryApp.Models.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LibraryApp.Models.ReadingHistory", b =>
                 {
                     b.HasOne("LibraryApp.Models.Book", "Book")
@@ -361,6 +404,8 @@ namespace LibraryApp.Migrations
                     b.Navigation("Favorites");
 
                     b.Navigation("FcmTokens");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("ReadingHistories");
 

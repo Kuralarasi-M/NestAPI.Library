@@ -36,4 +36,5 @@ namespace LibraryApp.Feature.Auth.Commands
         // Number of downloads from Gutendex
         public int DownloadCount { get; set; }
     }
+
 }
