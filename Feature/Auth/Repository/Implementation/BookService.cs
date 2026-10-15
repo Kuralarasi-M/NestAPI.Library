@@ -26,9 +26,9 @@ namespace LibraryApp.Feature.Auth.Repository.Implementation
      GetBookQuery gutendexId,
      CancellationToken cancellationToken)
         {
-            // 1. Get book details from Gutendex
+            // 1. Get book details from Gutendex (ensure trailing slash)
             var response = await _httpClient.GetAsync(
-                $"books/{gutendexId.BookId}",
+                $"books/{gutendexId.BookId}/",
                 cancellationToken);
 
             response.EnsureSuccessStatusCode();
