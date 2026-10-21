@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 
 namespace LibraryApp.Feature.Auth.Commands
 {
@@ -14,7 +14,7 @@ namespace LibraryApp.Feature.Auth.Commands
         public string Message { get; set; }
         public string Role { get; set; }
 
-        public int userId { get; set; }
+        public Guid? userId { get; set; }
     }
 
 }

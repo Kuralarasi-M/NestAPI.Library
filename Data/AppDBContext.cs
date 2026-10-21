@@ -1,4 +1,4 @@
-﻿using LibraryApp.Models;
+using LibraryApp.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Reflection.Emit;
@@ -47,10 +47,10 @@ namespace LibraryApp.Data
                 .WithMany(u => u.SearchHistories)
                 .HasForeignKey(s => s.UserId);
             modelBuilder.Entity<UserFcmToken>()
-    .HasOne(x => x.User)
-    .WithMany()
-    .HasForeignKey(x => x.UserId)
-    .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(x => x.User)
+                .WithMany(u => u.FcmTokens)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
     }
