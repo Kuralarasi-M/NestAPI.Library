@@ -109,17 +109,30 @@ namespace LibraryApp.Feature.Auth.Repository.Implementation
 
             if (meta?.Formats != null)
             {
+                // Plain text candidates
                 if (meta.Formats.TryGetValue("text/plain; charset=utf-8", out var utf8Url) && !string.IsNullOrEmpty(utf8Url))
                     candidates.Add(utf8Url);
+                if (meta.Formats.TryGetValue("text/plain; charset=iso-8859-1", out var isoUrl) && !string.IsNullOrEmpty(isoUrl))
+                    candidates.Add(isoUrl);
                 if (meta.Formats.TryGetValue("text/plain; charset=us-ascii", out var asciiUrl) && !string.IsNullOrEmpty(asciiUrl))
                     candidates.Add(asciiUrl);
                 if (meta.Formats.TryGetValue("text/plain", out var plainUrl) && !string.IsNullOrEmpty(plainUrl))
                     candidates.Add(plainUrl);
+
+                // HTML candidates (for books digitized primarily in HTML / UTF-8)
+                if (meta.Formats.TryGetValue("text/html; charset=utf-8", out var htmlUtf8) && !string.IsNullOrEmpty(htmlUtf8))
+                    candidates.Add(htmlUtf8);
+                if (meta.Formats.TryGetValue("text/html", out var htmlUrl) && !string.IsNullOrEmpty(htmlUrl))
+                    candidates.Add(htmlUrl);
             }
 
-            // Standard fallback Gutenberg cache URL
+            // Standard fallback Gutenberg cache & file paths (handles Tamil & non-ASCII digitizations)
             candidates.Add($"https://www.gutenberg.org/cache/epub/{bookId}/pg{bookId}.txt");
+            candidates.Add($"https://www.gutenberg.org/cache/epub/{bookId}/pg{bookId}.txt.utf8");
             candidates.Add($"https://www.gutenberg.org/files/{bookId}/{bookId}-0.txt");
+            candidates.Add($"https://www.gutenberg.org/files/{bookId}/{bookId}.txt");
+            candidates.Add($"https://www.gutenberg.org/files/{bookId}/{bookId}-h/{bookId}-h.htm");
+            candidates.Add($"https://www.gutenberg.org/files/{bookId}/{bookId}-h.htm");
 
             foreach (var url in candidates.Distinct())
             {
@@ -129,10 +142,26 @@ namespace LibraryApp.Feature.Auth.Repository.Implementation
                     var textResponse = await _gutenbergClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
                     if (textResponse.IsSuccessStatusCode)
                     {
-                        var fetched = await textResponse.Content.ReadAsStringAsync(cancellationToken);
+                        var bytes = await textResponse.Content.ReadAsByteArrayAsync(cancellationToken);
+                        var fetched = System.Text.Encoding.UTF8.GetString(bytes);
+
+                        // If it's an HTML file, strip tags to extract clean readable text
+                        if (url.EndsWith(".htm", StringComparison.OrdinalIgnoreCase) ||
+                            url.EndsWith(".html", StringComparison.OrdinalIgnoreCase) ||
+                            fetched.Contains("<html", StringComparison.OrdinalIgnoreCase))
+                        {
+                            fetched = System.Text.RegularExpressions.Regex.Replace(fetched, @"<(script|style)[^>]*>[\s\S]*?</\1>", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                            fetched = System.Text.RegularExpressions.Regex.Replace(fetched, @"<br\s*/?>", "\n\n", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                            fetched = System.Text.RegularExpressions.Regex.Replace(fetched, @"</p>", "\n\n", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                            fetched = System.Text.RegularExpressions.Regex.Replace(fetched, @"<[^>]+>", " ");
+                            fetched = System.Net.WebUtility.HtmlDecode(fetched);
+                            fetched = System.Text.RegularExpressions.Regex.Replace(fetched, @"[ \t]+", " ");
+                            fetched = System.Text.RegularExpressions.Regex.Replace(fetched, @"\n{3,}", "\n\n");
+                        }
+
                         if (!string.IsNullOrWhiteSpace(fetched) && fetched.Length > 200)
                         {
-                            bookText = fetched;
+                            bookText = fetched.Trim();
                             break;
                         }
                     }
