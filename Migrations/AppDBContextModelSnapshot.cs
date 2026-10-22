@@ -86,8 +86,8 @@ namespace LibraryApp.Migrations
                     b.Property<DateTime>("DownloadedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -112,8 +112,8 @@ namespace LibraryApp.Migrations
                     b.Property<long>("BookId")
                         .HasColumnType("bigint");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -146,8 +146,8 @@ namespace LibraryApp.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -170,8 +170,8 @@ namespace LibraryApp.Migrations
                     b.Property<DateTime>("LastReadAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -201,8 +201,8 @@ namespace LibraryApp.Migrations
                     b.Property<DateTime>("SearchAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -215,11 +215,9 @@ namespace LibraryApp.Migrations
 
             modelBuilder.Entity("LibraryApp.Models.User", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
@@ -269,17 +267,12 @@ namespace LibraryApp.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("UserId1")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("UserFcmTokens");
                 });
@@ -374,14 +367,10 @@ namespace LibraryApp.Migrations
             modelBuilder.Entity("LibraryApp.Models.UserFcmToken", b =>
                 {
                     b.HasOne("LibraryApp.Models.User", "User")
-                        .WithMany()
+                        .WithMany("FcmTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("LibraryApp.Models.User", null)
-                        .WithMany("FcmTokens")
-                        .HasForeignKey("UserId1");
 
                     b.Navigation("User");
                 });

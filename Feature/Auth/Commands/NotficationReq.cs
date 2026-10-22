@@ -1,4 +1,4 @@
-﻿using FirebaseAdmin.Messaging;
+using FirebaseAdmin.Messaging;
 using LibraryApp.Data;
 using LibraryApp.Feature.Auth.Repository.Interface;
 using LibraryApp.Models;
@@ -7,15 +7,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LibraryApp.Feature.Auth.Commands
 {
-    public class NotficationReq:IRequest<IEnumerable<NotificationRes>>
+    public class NotficationReq : IRequest<IEnumerable<NotificationRes>>
     {
+        public Guid? UserId { get; set; }
 
+        public NotficationReq(Guid? userId = null)
+        {
+            UserId = userId;
+        }
     }
     public class NotificationRes
     {
         public int Id { get; set; }
 
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
 
         public string Title { get; set; } = string.Empty;
 
@@ -30,13 +35,18 @@ namespace LibraryApp.Feature.Auth.Commands
         private readonly AppDBContext _dbContext;
         public NotificationHandler(AppDBContext _dbContext)
         {
-            this._dbContext= _dbContext;
+            this._dbContext = _dbContext;
         }
         public async Task<IEnumerable<NotificationRes>> Handle(NotficationReq query, CancellationToken cancellationToken)
         {
-           
-            var notifications = await _dbContext.Notifications
-    .Where(x => x.UserId == 1)
+            var queryable = _dbContext.Notifications.AsQueryable();
+
+            if (query.UserId.HasValue)
+            {
+                queryable = queryable.Where(x => x.UserId == query.UserId.Value);
+            }
+
+            var notifications = await queryable
     .Select(x => new NotificationRes
     {
         Id = x.Id,

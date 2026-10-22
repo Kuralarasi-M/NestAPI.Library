@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 namespace LibraryApp.Feature.Auth.Commands
 {
     public class UserRegisterCommand : IRequest<UserRegisterResponse>
@@ -12,6 +12,6 @@ namespace LibraryApp.Feature.Auth.Commands
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public string Role {  get; set; } = string.Empty;
-        public int userId { get; set; }
+        public Guid? userId { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using LibraryApp.Data;
+using LibraryApp.Data;
 using LibraryApp.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +7,7 @@ namespace LibraryApp.Feature.Auth.Commands
 {
     public class TokenRequest:IRequest<TokenResponse>
     {
-        public int userId { get; set; }
+        public Guid userId { get; set; }
         public string fcmToken { get; set; }
     }
     public class TokenResponse

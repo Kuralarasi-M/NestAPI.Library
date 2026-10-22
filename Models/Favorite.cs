@@ -1,10 +1,10 @@
-﻿namespace LibraryApp.Models;
+namespace LibraryApp.Models;
 
 public class Favorite
 {
     public long Id { get; set; }
 
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
 
     public long BookId { get; set; }
 

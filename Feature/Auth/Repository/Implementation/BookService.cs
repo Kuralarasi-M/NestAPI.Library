@@ -3,6 +3,7 @@ using LibraryApp.Feature.Auth.Commands;
 using LibraryApp.Feature.Auth.Repository.Interface;
 using LibraryApp.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 
 namespace LibraryApp.Feature.Auth.Repository.Implementation
@@ -12,24 +13,34 @@ namespace LibraryApp.Feature.Auth.Repository.Implementation
         private readonly HttpClient _httpClient;
         private readonly HttpClient _gutenbergClient;
         private readonly AppDBContext _dbContext;
+        private readonly IMemoryCache _cache;
+
         public BookService(
-    HttpClient httpClient,
-    AppDBContext context,
-    IHttpClientFactory httpClientFactory)
+            HttpClient httpClient,
+            AppDBContext context,
+            IHttpClientFactory httpClientFactory,
+            IMemoryCache cache)
         {
             _httpClient = httpClient;
             _dbContext = context;
             _gutenbergClient = httpClientFactory.CreateClient("Gutenberg");
+            _cache = cache;
         }
 
-        public async Task<GetBookResponseDTO> GetBook(
-     GetBookQuery gutendexId,
-     CancellationToken cancellationToken)
+        public async Task<GetBookResponseDTO?> GetBook(
+            GetBookQuery gutendexId,
+            CancellationToken cancellationToken)
         {
+            var cacheKey = $"book_meta_{gutendexId.BookId}";
+            if (_cache.TryGetValue(cacheKey, out GetBookResponseDTO? cachedBook) && cachedBook != null)
+            {
+                return cachedBook;
+            }
+
             GetBookResponseDTO? book = null;
             try
             {
-                // 1. Get book details from Gutendex (ensure trailing slash)
+                // Fetch fast metadata from Gutendex (ensure trailing slash)
                 var response = await _httpClient.GetAsync(
                     $"books/{gutendexId.BookId}/",
                     cancellationToken);
@@ -77,51 +88,72 @@ namespace LibraryApp.Feature.Auth.Repository.Implementation
                 }
             }
 
-            // 2. Download the actual book text from Gutenberg with fallback
-            var textUrl =
-                $"https://www.gutenberg.org/cache/epub/{gutendexId.BookId}/pg{gutendexId.BookId}.txt";
-
-            try
-            {
-                var textResponse = await _gutenbergClient.GetAsync(
-                    textUrl,
-                    HttpCompletionOption.ResponseContentRead,
-                    cancellationToken);
-
-                if (textResponse.IsSuccessStatusCode)
-                {
-                    book.BookText = await textResponse.Content.ReadAsStringAsync(cancellationToken);
-                }
-            }
-            catch (Exception)
-            {
-                // If Gutenberg drops connection or fails, fall back to any available format or empty string
-                if (book.Formats != null && book.Formats.TryGetValue("text/plain; charset=utf-8", out var plainUrl))
-                {
-                    try
-                    {
-                        var fallbackResponse = await _gutenbergClient.GetAsync(plainUrl, cancellationToken);
-                        if (fallbackResponse.IsSuccessStatusCode)
-                        {
-                            book.BookText = await fallbackResponse.Content.ReadAsStringAsync(cancellationToken);
-                        }
-                    }
-                    catch
-                    {
-                        book.BookText = string.Empty;
-                    }
-                }
-                else
-                {
-                    book.BookText = string.Empty;
-                }
-            }
-
+            // Cache metadata in RAM for 2 hours
+            _cache.Set(cacheKey, book, TimeSpan.FromHours(2));
             return book;
         }
+
+        public async Task<string?> GetBookContent(int bookId, CancellationToken cancellationToken)
+        {
+            var cacheKey = $"book_content_{bookId}";
+            if (_cache.TryGetValue(cacheKey, out string? cachedText) && !string.IsNullOrEmpty(cachedText))
+            {
+                return cachedText;
+            }
+
+            string bookText = string.Empty;
+
+            // 1. First get book metadata to find working text formats
+            var meta = await GetBook(new GetBookQuery(bookId), cancellationToken);
+            var candidates = new List<string>();
+
+            if (meta?.Formats != null)
+            {
+                if (meta.Formats.TryGetValue("text/plain; charset=utf-8", out var utf8Url) && !string.IsNullOrEmpty(utf8Url))
+                    candidates.Add(utf8Url);
+                if (meta.Formats.TryGetValue("text/plain; charset=us-ascii", out var asciiUrl) && !string.IsNullOrEmpty(asciiUrl))
+                    candidates.Add(asciiUrl);
+                if (meta.Formats.TryGetValue("text/plain", out var plainUrl) && !string.IsNullOrEmpty(plainUrl))
+                    candidates.Add(plainUrl);
+            }
+
+            // Standard fallback Gutenberg cache URL
+            candidates.Add($"https://www.gutenberg.org/cache/epub/{bookId}/pg{bookId}.txt");
+            candidates.Add($"https://www.gutenberg.org/files/{bookId}/{bookId}-0.txt");
+
+            foreach (var url in candidates.Distinct())
+            {
+                try
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    var textResponse = await _gutenbergClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
+                    if (textResponse.IsSuccessStatusCode)
+                    {
+                        var fetched = await textResponse.Content.ReadAsStringAsync(cancellationToken);
+                        if (!string.IsNullOrWhiteSpace(fetched) && fetched.Length > 200)
+                        {
+                            bookText = fetched;
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed fetching text from {url}: {ex.Message}");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(bookText))
+            {
+                _cache.Set(cacheKey, bookText, TimeSpan.FromHours(6));
+            }
+
+            return bookText;
+        }
+
         public async Task<IEnumerable<Book>> GetAllBookAsync()
         {
-            var books= await _dbContext.Books.ToListAsync();
+            var books = await _dbContext.Books.ToListAsync();
             if (books == null)
             {
                 throw new Exception("GetAllBookAsync returned null.");

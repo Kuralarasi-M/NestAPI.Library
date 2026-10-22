@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace LibraryApp.Models;
 
@@ -6,7 +6,7 @@ public class SearchHistory
 {
     public int Id { get; set; }
 
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
 
     [Required]
     [MaxLength(200)]
