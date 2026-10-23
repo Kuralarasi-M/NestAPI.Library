@@ -78,6 +78,40 @@ public class NotificationService : INotificationService
             {
                 var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(multicast);
                 Console.WriteLine($"[FCM] Sent to {response.SuccessCount}/{batch.Count} devices. Failures: {response.FailureCount}");
+
+                if (response.FailureCount > 0)
+                {
+                    var deadTokens = new List<string>();
+                    for (int j = 0; j < response.Responses.Count; j++)
+                    {
+                        var item = response.Responses[j];
+                        if (!item.IsSuccess)
+                        {
+                            var token = batch[j];
+                            Console.WriteLine($"[FCM Token Failure]: {item.Exception?.MessagingErrorCode} - {item.Exception?.Message} (Token: {token.Substring(0, Math.Min(token.Length, 20))}...)");
+
+                            // If token is invalid, unregistered, or bogus mock token, mark for removal
+                            if (item.Exception?.MessagingErrorCode == MessagingErrorCode.Unregistered ||
+                                item.Exception?.MessagingErrorCode == MessagingErrorCode.InvalidArgument)
+                            {
+                                deadTokens.Add(token);
+                            }
+                        }
+                    }
+
+                    if (deadTokens.Count > 0)
+                    {
+                        var staleEntities = await _context.UserFcmTokens
+                            .Where(t => deadTokens.Contains(t.FcmToken))
+                            .ToListAsync();
+                        if (staleEntities.Count > 0)
+                        {
+                            _context.UserFcmTokens.RemoveRange(staleEntities);
+                            await _context.SaveChangesAsync();
+                            Console.WriteLine($"[FCM Cleanup]: Removed {staleEntities.Count} stale/invalid token(s) from database.");
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
