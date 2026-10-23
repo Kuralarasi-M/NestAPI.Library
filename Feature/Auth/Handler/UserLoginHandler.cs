@@ -2,6 +2,7 @@ using LibraryApp.Feature.Auth.Commands;
 using LibraryApp.Feature.Auth.Repository.Interface;
 using LibraryApp.Feature.Auth.Services;
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace LibraryApp.Feature.Auth.Handler
@@ -10,21 +11,20 @@ namespace LibraryApp.Feature.Auth.Handler
     {
         private readonly IUserRepository _repository;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
-        private readonly INotificationService _notificationService;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<UserLoginHandler> _logger;
 
         public UserLoginHandler(
             IUserRepository repository,
             IJwtTokenGenerator jwtTokenGenerator,
-            INotificationService notificationService,
+            IServiceScopeFactory scopeFactory,
             ILogger<UserLoginHandler> logger)
         {
             _repository = repository;
             _jwtTokenGenerator = jwtTokenGenerator;
-            _notificationService = notificationService;
+            _scopeFactory = scopeFactory;
             _logger = logger;
         }
-
         public async Task<UserLoginResponse> Handle(UserLoginReq request, CancellationToken cancellationToken)
         {
             UserLoginResponse res = new UserLoginResponse();
@@ -49,21 +49,28 @@ namespace LibraryApp.Feature.Auth.Handler
                 res.userId = user.Id;
 
                 // Send FCM notification to admins when a user logs in (excluding admin's own logins)
+                // Use a separate scope so DbContext is not disposed after the HTTP request finishes
                 if (!string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
                 {
+                    var userName = user.Name;
+                    var userEmail = user.Email;
+                    var userId = user.Id;
+
                     _ = Task.Run(async () =>
                     {
                         try
                         {
+                            using var scope = _scopeFactory.CreateScope();
+                            var notifService = scope.ServiceProvider.GetRequiredService<INotificationService>();
                             var title = "User Login Alert";
-                            var body = $"User '{user.Name}' ({user.Email}) logged in at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
-                            await _notificationService.NotifyAdminsAsync(title, body);
+                            var body = $"User '{userName}' ({userEmail}) logged in at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
+                            await notifService.NotifyAdminsAsync(title, body);
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "Failed to send login notification to admins for user {UserId}", user.Id);
+                            _logger.LogError(ex, "Failed to send login notification to admins for user {UserId}", userId);
                         }
-                    }, cancellationToken);
+                    });
                 }
 
                 return res;
