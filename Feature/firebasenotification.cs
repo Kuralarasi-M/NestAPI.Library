@@ -1,10 +1,12 @@
-﻿using FirebaseAdmin.Messaging;
+using FirebaseAdmin.Messaging;
 using Google;
 using LibraryApp.Data;
 using Microsoft.EntityFrameworkCore;
 public interface INotificationService
 {
     Task NotifyAdminsAsync(string title, string body);
+    Task BroadcastAsync(string title, string body);
+    Task NotifyUserAsync(Guid userId, string title, string body);
 }
 public class NotificationService : INotificationService
 {
@@ -18,45 +20,68 @@ public class NotificationService : INotificationService
     public async Task NotifyAdminsAsync(string title, string body)
     {
         var adminTokens = await (
-     from user in _context.Users
-     join token in _context.UserFcmTokens
-         on user.Id equals token.UserId
-     where user.Role == "Admin"
-           && !string.IsNullOrEmpty(token.FcmToken)
-     select token.FcmToken
- )
- .Distinct()
- .ToListAsync();
+            from user in _context.Users
+            join token in _context.UserFcmTokens
+                on user.Id equals token.UserId
+            where user.Role == "Admin"
+                  && !string.IsNullOrEmpty(token.FcmToken)
+            select token.FcmToken
+        )
+        .Distinct()
+        .ToListAsync();
 
-        foreach (var token in adminTokens)
+        await SendMulticastAsync(adminTokens, title, body);
+    }
+
+    public async Task BroadcastAsync(string title, string body)
+    {
+        var allTokens = await _context.UserFcmTokens
+            .Where(t => !string.IsNullOrEmpty(t.FcmToken))
+            .Select(t => t.FcmToken)
+            .Distinct()
+            .ToListAsync();
+
+        await SendMulticastAsync(allTokens, title, body);
+    }
+
+    public async Task NotifyUserAsync(Guid userId, string title, string body)
+    {
+        var userTokens = await _context.UserFcmTokens
+            .Where(t => t.UserId == userId && !string.IsNullOrEmpty(t.FcmToken))
+            .Select(t => t.FcmToken)
+            .Distinct()
+            .ToListAsync();
+
+        await SendMulticastAsync(userTokens, title, body);
+    }
+
+    private async Task SendMulticastAsync(List<string> tokens, string title, string body)
+    {
+        if (tokens == null || tokens.Count == 0) return;
+
+        // Firebase multicast sends in batches of up to 500
+        const int batchSize = 500;
+        for (int i = 0; i < tokens.Count; i += batchSize)
         {
-            var message = new Message
+            var batch = tokens.Skip(i).Take(batchSize).ToList();
+            var multicast = new MulticastMessage
             {
-                Token = token,
+                Tokens = batch,
                 Notification = new Notification
                 {
                     Title = title,
                     Body = body
                 }
             };
+
             try
             {
-                var response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
-
-                Console.WriteLine("=================================");
-                Console.WriteLine("FCM SENT SUCCESSFULLY");
-                Console.WriteLine($"Response: {response}");
-                Console.WriteLine("=================================");
+                var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(multicast);
+                Console.WriteLine($"[FCM] Sent to {response.SuccessCount}/{batch.Count} devices. Failures: {response.FailureCount}");
             }
-            catch (FirebaseMessagingException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine("=================================");
-                Console.WriteLine("FCM FAILED");
-                Console.WriteLine($"ErrorCode: {ex.MessagingErrorCode}");
-                Console.WriteLine($"Message: {ex.Message}");
-                Console.WriteLine("=================================");
-
-                throw;
+                Console.WriteLine($"[FCM ERROR] Failed to send multicast batch: {ex.Message}");
             }
         }
     }

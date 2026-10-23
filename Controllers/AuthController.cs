@@ -46,6 +46,14 @@ namespace LibraryApp.Controllers
         }
 
         [Authorize]
+        [HttpPost("RemoveFCMToken")]
+        public async Task<IActionResult> RemoveFcmToken([FromBody] RemoveTokenRequest token)
+        {
+            var result = await mediator.Send(token);
+            return Ok(result);
+        }
+
+        [Authorize]
         [HttpGet("Notification")]
         public async Task<IActionResult> NotificationAsync()
         {

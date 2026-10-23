@@ -1,4 +1,4 @@
-﻿using Google;
+using Google;
 using LibraryApp.Data;
 using LibraryApp.Feature.Auth.Commands;
 using LibraryApp.Feature.Auth.Repository.Interface;
@@ -55,21 +55,38 @@ namespace LibraryApp.Feature.Auth.Handler
             };
             await repository.UserAddAsync(user);
             
-            await _notificationService.NotifyAdminsAsync(
-                "New User Registered",
-                $"{user.Name} registered successfully."
-            );
-            var notifi = new Notification
+            // 1. Send FCM push notification to all Admins
+            try
             {
-                Title = $"New User Registered",
-                Message= $"{user.Name} has registered successfully.",
-                IsRead = false,
-                CreatedAt = DateTime.UtcNow,
-                UserId= user.Id
+                await _notificationService.NotifyAdminsAsync(
+                    "New User Registered",
+                    $"{user.Name} ({user.Email}) registered successfully."
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FCM Error on Register]: {ex.Message}");
+            }
 
-            };
-            await _dbContext.Notifications.AddAsync(notifi);
-            await _dbContext.SaveChangesAsync();
+            // 2. Save in-app notification in DB for all Admin users so they see it in their notification feed
+            var adminUserIds = await _dbContext.Users
+                .Where(u => u.Role == "Admin")
+                .Select(u => u.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var adminId in adminUserIds)
+            {
+                await _dbContext.Notifications.AddAsync(new Notification
+                {
+                    UserId = adminId,
+                    Title = "New User Registered",
+                    Message = $"{user.Name} ({user.Email}) has registered successfully.",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                }, cancellationToken);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
             return new UserRegisterResponse
             {
                 Success = true,

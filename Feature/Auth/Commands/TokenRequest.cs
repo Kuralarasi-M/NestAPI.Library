@@ -58,7 +58,54 @@ namespace LibraryApp.Feature.Auth.Commands
                     successCode = 500,
                     Message = ex.Message,
                 };
+            }
+        }
+    }
 
+    public class RemoveTokenRequest : IRequest<TokenResponse>
+    {
+        public Guid UserId { get; set; }
+        public string? FcmToken { get; set; }
+    }
+
+    public class RemoveTokenHandler : IRequestHandler<RemoveTokenRequest, TokenResponse>
+    {
+        private readonly AppDBContext _context;
+        public RemoveTokenHandler(AppDBContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<TokenResponse> Handle(RemoveTokenRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var query = _context.UserFcmTokens.Where(t => t.UserId == request.UserId);
+                if (!string.IsNullOrWhiteSpace(request.FcmToken))
+                {
+                    query = query.Where(t => t.FcmToken == request.FcmToken);
+                }
+
+                var tokensToRemove = await query.ToListAsync(cancellationToken);
+                if (tokensToRemove.Count > 0)
+                {
+                    _context.UserFcmTokens.RemoveRange(tokensToRemove);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                return new TokenResponse
+                {
+                    successCode = 200,
+                    Message = "FCM Token(s) removed successfully."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new TokenResponse
+                {
+                    successCode = 500,
+                    Message = ex.Message
+                };
             }
         }
     }
