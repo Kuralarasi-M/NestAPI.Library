@@ -94,6 +94,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<LibraryApp.Feature.Quiz.Services.IGamificationService, LibraryApp.Feature.Quiz.Services.GamificationService>();
 builder.Services.AddScoped<LibraryApp.Feature.WordGames.Services.IWordGameService, LibraryApp.Feature.WordGames.Services.WordGameService>();
+builder.Services.AddScoped<LibraryApp.Feature.TechNews.Services.ITechNewsAggregator, LibraryApp.Feature.TechNews.Services.TechNewsAggregator>();
 builder.Services.AddHttpClient<LibraryApp.Feature.Quiz.Services.IQuizService, LibraryApp.Feature.Quiz.Services.QuizService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(15);
