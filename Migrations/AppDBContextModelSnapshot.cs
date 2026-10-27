@@ -22,6 +22,96 @@ namespace LibraryApp.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("LibraryApp.Models.Badge", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("RequiredPoints")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RequiredStreak")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Badges");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Completed your first quiz",
+                            Icon = "Zap",
+                            Name = "Quick Starter",
+                            RequiredPoints = 10,
+                            RequiredStreak = 0
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Reached a 3-day reading streak",
+                            Icon = "Flame",
+                            Name = "Streak Starter",
+                            RequiredPoints = 0,
+                            RequiredStreak = 3
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Reached a 7-day reading streak",
+                            Icon = "Flame",
+                            Name = "Dedicated Reader",
+                            RequiredPoints = 0,
+                            RequiredStreak = 7
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Description = "Earned 100 quiz points",
+                            Icon = "Award",
+                            Name = "Trivia Novice",
+                            RequiredPoints = 100,
+                            RequiredStreak = 0
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Description = "Earned 500 quiz points",
+                            Icon = "BookOpen",
+                            Name = "Scholar",
+                            RequiredPoints = 500,
+                            RequiredStreak = 0
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Description = "Earned 1000 quiz points",
+                            Icon = "Trophy",
+                            Name = "Master Mind",
+                            RequiredPoints = 1000,
+                            RequiredStreak = 0
+                        });
+                });
+
             modelBuilder.Entity("LibraryApp.Models.Book", b =>
                 {
                     b.Property<long>("Id")
@@ -70,6 +160,239 @@ namespace LibraryApp.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Books");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.BookReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BookReviews");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.DailyReadLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CompletedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Genre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CompletedDate")
+                        .IsUnique();
+
+                    b.ToTable("DailyReadLogs");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.DailyTamilSentence", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DayNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EnglishSentence")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("PartOfSpeech")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Phonetic")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Scenario")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TamilMeaning")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TamilSentence")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Word")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DailyTamilSentences");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            DayNumber = 1,
+                            EnglishSentence = "Success in any competitive exam requires patience and perseverance.",
+                            PartOfSpeech = "Noun",
+                            Phonetic = "/ˌpɜːsɪˈvɪərəns/",
+                            Scenario = "Career & Exam Preparation (வேலை & கல்வி சூழல்)",
+                            TamilMeaning = "விடாமுயற்சி",
+                            TamilSentence = "போட்டித் தேர்வுகளில் வெற்றி பெற பொறுமையும் விடாமுயற்சியும் அவசியம்.",
+                            Word = "Perseverance"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            DayNumber = 1,
+                            EnglishSentence = "The students were very enthusiastic about the new science project.",
+                            PartOfSpeech = "Adjective",
+                            Phonetic = "/ɪnˌθjuːziˈæstɪk/",
+                            Scenario = "School & Learning (பள்ளி மற்றும் கற்றல் சூழல்)",
+                            TamilMeaning = "ஆர்வமிக்க / உற்சாகமான",
+                            TamilSentence = "புதிய அறிவியல் திட்டத்தில் மாணவர்கள் மிகவும் ஆர்வமாகவும் உற்சாகமாகவும் இருந்தனர்.",
+                            Word = "Enthusiastic"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            DayNumber = 1,
+                            EnglishSentence = "The ancient Tanjore temple has a magnificent architecture.",
+                            PartOfSpeech = "Adjective",
+                            Phonetic = "/mæɡˈnɪfɪsnt/",
+                            Scenario = "Travel & Culture (சுற்றுலா & கலாச்சாரம்)",
+                            TamilMeaning = "அற்புதமான / கம்பீரமான",
+                            TamilSentence = "பழங்கால தஞ்சைப் பெரிய கோவில் அற்புதமான கட்டடக்கலை கொண்டது.",
+                            Word = "Magnificent"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            DayNumber = 1,
+                            EnglishSentence = "He expressed his sincere gratitude to everyone who helped him.",
+                            PartOfSpeech = "Noun",
+                            Phonetic = "/ˈɡrætɪtjuːd/",
+                            Scenario = "Social Courtesy (சமூக நற்பண்பு)",
+                            TamilMeaning = "நன்றி உணர்வு",
+                            TamilSentence = "தனக்கு உதவிய அனைவருக்கும் அவர் தனது உளமார்ந்த நன்றி உணர்வைத் தெரிவித்தார்.",
+                            Word = "Gratitude"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            DayNumber = 1,
+                            EnglishSentence = "She remained resilient despite facing numerous unexpected difficulties.",
+                            PartOfSpeech = "Adjective",
+                            Phonetic = "/rɪˈzɪliənt/",
+                            Scenario = "Overcoming Obstacles (சவால்களை எதிர்கொள்ளுதல்)",
+                            TamilMeaning = "மீண்டுவரும் தன்மை கொண்ட / தளராத",
+                            TamilSentence = "பல எதிர்பாராத இன்னல்களை சந்தித்த போதிலும், அவள் தளராமல் மீண்டு வந்தாள்.",
+                            Word = "Resilient"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            DayNumber = 2,
+                            EnglishSentence = "Children learn quickly because of their natural curiosity.",
+                            PartOfSpeech = "Noun",
+                            Phonetic = "/ˌkjʊəriˈɒsəti/",
+                            Scenario = "Everyday Life (அன்றாட வாழ்க்கை)",
+                            TamilMeaning = "அறியும் ஆர்வம் / புதுமை நாட்டம்",
+                            TamilSentence = "இயற்கையான அறியும் ஆர்வத்தின் காரணமாக குழந்தைகள் விரைவாகக் கற்றுக்கொள்கிறார்கள்.",
+                            Word = "Curiosity"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            DayNumber = 2,
+                            EnglishSentence = "Being punctual to morning meetings shows your professional dedication.",
+                            PartOfSpeech = "Adjective",
+                            Phonetic = "/ˈpʌŋktʃuəl/",
+                            Scenario = "Workplace & Office (அலுவலகச் சூழல்)",
+                            TamilMeaning = "நேரந்தவறாமை",
+                            TamilSentence = "காலை கூட்டங்களுக்கு நேரந்தவறாமல் வருவது உங்கள் தொழில் அர்ப்பணிப்பைக் காட்டுகிறது.",
+                            Word = "Punctual"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            DayNumber = 2,
+                            EnglishSentence = "Treating homeless animals with compassion is a noble act.",
+                            PartOfSpeech = "Noun",
+                            Phonetic = "/kəmˈpæʃn/",
+                            Scenario = "Kindness & Empathy (இரக்கம் & அன்பு)",
+                            TamilMeaning = "கருணை / இரக்கம்",
+                            TamilSentence = "வீடற்ற விலங்குகளிடம் கருணையுடன் நடந்துகொள்வது ஒரு சிறந்த செயலாகும்.",
+                            Word = "Compassion"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            DayNumber = 2,
+                            EnglishSentence = "Space exploration is one of the most fascinating topics in science.",
+                            PartOfSpeech = "Adjective",
+                            Phonetic = "/ˈfæsɪneɪtɪŋ/",
+                            Scenario = "Science & Discovery (அறிவியல் & ஆய்வு)",
+                            TamilMeaning = "மனதைக் கவரும் / வியப்பூட்டும்",
+                            TamilSentence = "விண்வெளி ஆய்வு அறிவியலின் மிகவும் வியப்பூட்டும் தலைப்புகளில் ஒன்றாகும்.",
+                            Word = "Fascinating"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            DayNumber = 2,
+                            EnglishSentence = "Stay optimistic even when things do not go as planned.",
+                            PartOfSpeech = "Adjective",
+                            Phonetic = "/ˌɒptɪˈmɪstɪk/",
+                            Scenario = "Motivation (ஊக்கமளித்தல்)",
+                            TamilMeaning = "நம்பிக்கையான / நன்னோக்கு கொண்ட",
+                            TamilSentence = "திட்டமிட்டபடி காரியங்கள் நடக்காவிட்டாலும் நம்பிக்கையோடு இருங்கள்.",
+                            Word = "Optimistic"
+                        });
                 });
 
             modelBuilder.Entity("LibraryApp.Models.DownloadHistory", b =>
@@ -222,10 +545,28 @@ namespace LibraryApp.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("CurrentStreak")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CurrentStreakStartDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("LastActiveDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LongestStreak")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LongestStreakEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LongestStreakStartDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -241,12 +582,42 @@ namespace LibraryApp.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("TotalPoints")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WordSearchStage")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.UserBadge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BadgeId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("EarnedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BadgeId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserBadges");
                 });
 
             modelBuilder.Entity("LibraryApp.Models.UserFcmToken", b =>
@@ -275,6 +646,94 @@ namespace LibraryApp.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserFcmTokens");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.UserGenre", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Genre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("SelectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Genre")
+                        .IsUnique();
+
+                    b.ToTable("UserGenres");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.UserQuizAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("BookId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("PointsEarned")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserQuizAttempts");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.BookReview", b =>
+                {
+                    b.HasOne("LibraryApp.Models.User", "User")
+                        .WithMany("Reviews")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.DailyReadLog", b =>
+                {
+                    b.HasOne("LibraryApp.Models.User", "User")
+                        .WithMany("DailyReadLogs")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LibraryApp.Models.DownloadHistory", b =>
@@ -364,10 +823,51 @@ namespace LibraryApp.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LibraryApp.Models.UserBadge", b =>
+                {
+                    b.HasOne("LibraryApp.Models.Badge", "Badge")
+                        .WithMany()
+                        .HasForeignKey("BadgeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LibraryApp.Models.User", "User")
+                        .WithMany("Badges")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Badge");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LibraryApp.Models.UserFcmToken", b =>
                 {
                     b.HasOne("LibraryApp.Models.User", "User")
                         .WithMany("FcmTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.UserGenre", b =>
+                {
+                    b.HasOne("LibraryApp.Models.User", "User")
+                        .WithMany("SelectedGenres")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LibraryApp.Models.UserQuizAttempt", b =>
+                {
+                    b.HasOne("LibraryApp.Models.User", "User")
+                        .WithMany("QuizAttempts")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -388,6 +888,10 @@ namespace LibraryApp.Migrations
 
             modelBuilder.Entity("LibraryApp.Models.User", b =>
                 {
+                    b.Navigation("Badges");
+
+                    b.Navigation("DailyReadLogs");
+
                     b.Navigation("DownloadHistories");
 
                     b.Navigation("Favorites");
@@ -396,9 +900,15 @@ namespace LibraryApp.Migrations
 
                     b.Navigation("Notifications");
 
+                    b.Navigation("QuizAttempts");
+
                     b.Navigation("ReadingHistories");
 
+                    b.Navigation("Reviews");
+
                     b.Navigation("SearchHistories");
+
+                    b.Navigation("SelectedGenres");
                 });
 #pragma warning restore 612, 618
         }

@@ -28,8 +28,17 @@ namespace LibraryApp.Feature.Auth.Handler
         public async Task<UserLoginResponse> Handle(UserLoginReq request, CancellationToken cancellationToken)
         {
             UserLoginResponse res = new UserLoginResponse();
-            var response = await _repository.UserAlreadyExist(request.Email);
-            if (response != true)
+
+            if (string.IsNullOrWhiteSpace(request?.Email) || string.IsNullOrWhiteSpace(request?.Password))
+            {
+                res.Message = "Email and password are required.";
+                res.IsSucess = false;
+                res.Token = "";
+                return res;
+            }
+
+            var user = await _repository.GetUserByEmailAsync(request.Email);
+            if (user == null)
             {
                 res.Message = "User Not Exist!. Please register First";
                 res.IsSucess = false;
@@ -37,48 +46,47 @@ namespace LibraryApp.Feature.Auth.Handler
                 return res;
             }
 
-            var user = await _repository.UserVerify(request);
-            if (user != null)
+            if (user.PasswordHash != request.Password)
             {
-                var token = _jwtTokenGenerator.GenerateToken(user);
-
-                res.Message = "User Log-in Successfully!.";
-                res.IsSucess = true;
-                res.Token = token;
-                res.Role = user.Role;
-                res.userId = user.Id;
-
-                // Send FCM notification to admins when a user logs in (excluding admin's own logins)
-                // Use a separate scope so DbContext is not disposed after the HTTP request finishes
-                if (!string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
-                {
-                    var userName = user.Name;
-                    var userEmail = user.Email;
-                    var userId = user.Id;
-
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            using var scope = _scopeFactory.CreateScope();
-                            var notifService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-                            var title = "User Login Alert";
-                            var body = $"User '{userName}' ({userEmail}) logged in at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
-                            await notifService.NotifyAdminsAsync(title, body);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Failed to send login notification to admins for user {UserId}", userId);
-                        }
-                    });
-                }
-
+                res.Message = "User Email or Password is Wrong!.";
+                res.IsSucess = false;
+                res.Token = "";
                 return res;
             }
 
-            res.Message = "User Email or Password is Wrong!.";
-            res.IsSucess = false;
-            res.Token = "";
+            var token = _jwtTokenGenerator.GenerateToken(user);
+
+            res.Message = "User Log-in Successfully!.";
+            res.IsSucess = true;
+            res.Token = token;
+            res.Role = user.Role;
+            res.userId = user.Id;
+
+            // Send FCM notification to admins when a user logs in (excluding admin's own logins)
+            // Use a separate scope so DbContext is not disposed after the HTTP request finishes
+            if (!string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                var userName = user.Name;
+                var userEmail = user.Email;
+                var userId = user.Id;
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var notifService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+                        var title = "User Login Alert";
+                        var body = $"User '{userName}' ({userEmail}) logged in at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
+                        await notifService.NotifyAdminsAsync(title, body);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send login notification to admins for user {UserId}", userId);
+                    }
+                });
+            }
+
             return res;
         }
     }

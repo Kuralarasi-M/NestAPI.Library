@@ -92,6 +92,13 @@ builder.Services.AddMediatR(cfg =>
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<LibraryApp.Feature.Quiz.Services.IGamificationService, LibraryApp.Feature.Quiz.Services.GamificationService>();
+builder.Services.AddScoped<LibraryApp.Feature.WordGames.Services.IWordGameService, LibraryApp.Feature.WordGames.Services.WordGameService>();
+builder.Services.AddHttpClient<LibraryApp.Feature.Quiz.Services.IQuizService, LibraryApp.Feature.Quiz.Services.QuizService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Add("User-Agent", "LibraryApp/1.0");
+});
 builder.Services.AddHttpClient<IBookService, BookService>(client =>
 {
     client.BaseAddress = new Uri("https://gutendex.com/");

@@ -1,4 +1,4 @@
-﻿using LibraryApp.Data;
+using LibraryApp.Data;
 using LibraryApp.Feature.Auth.Commands;
 using LibraryApp.Feature.Auth.Repository.Interface;
 using LibraryApp.Models;
@@ -34,6 +34,14 @@ namespace LibraryApp.Feature.Auth.Repository.Implementation
         {
             var response = await context.Users.FirstOrDefaultAsync(u => u.Email == user.Email && u.PasswordHash==user.Password);
             return response;
+        }
+
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            var normalized = email.Trim().ToLower();
+            return await context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalized);
         }
 
     }
